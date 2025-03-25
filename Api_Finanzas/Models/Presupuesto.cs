@@ -1,7 +1,10 @@
-﻿namespace Api_Finanzas.Models
+﻿using System.ComponentModel.DataAnnotations;
+
+namespace Api_Finanzas.Models
 {
     public class Presupuesto
     {
+        [Key]
         public int PresupuestoId { get; set; }
         public int UsuarioId { get; set; }
         public int CategoriaGastoId { get; set; }

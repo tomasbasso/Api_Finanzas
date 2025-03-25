@@ -1,7 +1,10 @@
-﻿namespace Api_Finanzas.Models
+﻿using System.ComponentModel.DataAnnotations;
+
+namespace Api_Finanzas.Models
 {
     public class Transaccion
     {
+        [Key]
         public int TransaccionId { get; set; }
         public int UsuarioId { get; set; }
         public int CuentaId { get; set; }
