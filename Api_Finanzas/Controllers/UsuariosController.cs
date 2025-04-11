@@ -45,7 +45,6 @@ namespace Api_Finanzas.Controllers
                 Email = usuario.Email
             });
         }
-
         [HttpPost("login")]
         public async Task<IActionResult> Login(LoginDto dto)
         {
@@ -53,7 +52,9 @@ namespace Api_Finanzas.Controllers
             if (usuario == null || !BCrypt.Net.BCrypt.Verify(dto.Contrasena, usuario.ContrasenaHash))
                 return Unauthorized("Credenciales inválidas");
 
-            // Por ahora no devolvemos token
+            // Simulamos una sesión guardando el email
+            SesionActual.Email = usuario.Email;
+
             return Ok(new UsuarioDto
             {
                 UsuarioId = usuario.UsuarioId,
@@ -63,15 +64,28 @@ namespace Api_Finanzas.Controllers
         }
 
 
-        //[Authorize]
         [HttpGet("me")]
-        public IActionResult Me()
+        public async Task<IActionResult> Me()
         {
-            var claims = User.Claims.Select(c => new { c.Type, c.Value }).ToList();
-            return Ok(claims);
+            var email = SesionActual.Email;
+
+            if (string.IsNullOrEmpty(email))
+                return Unauthorized("No hay usuario autenticado");
+
+            var usuario = await _context.Usuarios
+                .Where(u => u.Email == email)
+                .Select(u => new UsuarioDto
+                {
+                    UsuarioId = u.UsuarioId,
+                    Nombre = u.Nombre,
+                    Email = u.Email
+                })
+                .FirstOrDefaultAsync();
+
+            if (usuario == null)
+                return NotFound("Usuario no encontrado");
+
+            return Ok(usuario);
         }
-
-
-
     }
-}
+    }
