@@ -25,6 +25,7 @@ namespace Api_Finanzas.Controllers
                 {
                     CuentaId = c.CuentaId,
                     Nombre = c.Nombre,
+                    Banco = c.Banco,
                     SaldoInicial = c.SaldoInicial,
                     UsuarioId = c.UsuarioId
                 })
@@ -43,6 +44,7 @@ namespace Api_Finanzas.Controllers
             {
                 CuentaId = cuenta.CuentaId,
                 Nombre = cuenta.Nombre,
+                Banco = cuenta.Banco,
                 SaldoInicial = cuenta.SaldoInicial,
                 UsuarioId = cuenta.UsuarioId
             });
@@ -71,6 +73,7 @@ namespace Api_Finanzas.Controllers
             if (cuenta == null) return NotFound();
 
             cuenta.Nombre = dto.Nombre;
+            cuenta.Banco = dto.Banco;
             cuenta.SaldoInicial = dto.SaldoInicial;
             cuenta.UsuarioId = dto.UsuarioId;
 
