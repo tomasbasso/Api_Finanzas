@@ -26,6 +26,7 @@ namespace Api_Finanzas.Controllers
                     CuentaId = c.CuentaId,
                     Nombre = c.Nombre,
                     Banco = c.Banco,
+                    TipoCuenta = c.TipoCuenta,
                     SaldoInicial = c.SaldoInicial,
                     UsuarioId = c.UsuarioId
                 })
@@ -45,6 +46,7 @@ namespace Api_Finanzas.Controllers
                 CuentaId = cuenta.CuentaId,
                 Nombre = cuenta.Nombre,
                 Banco = cuenta.Banco,
+                TipoCuenta= cuenta.TipoCuenta,
                 SaldoInicial = cuenta.SaldoInicial,
                 UsuarioId = cuenta.UsuarioId
             });
@@ -56,7 +58,9 @@ namespace Api_Finanzas.Controllers
             var cuenta = new CuentaBancaria
             {
                 Nombre = dto.Nombre,
+                Banco = dto.Banco,
                 SaldoInicial = dto.SaldoInicial,
+                TipoCuenta= dto.TipoCuenta,
                 UsuarioId = dto.UsuarioId
             };
 
@@ -74,6 +78,7 @@ namespace Api_Finanzas.Controllers
 
             cuenta.Nombre = dto.Nombre;
             cuenta.Banco = dto.Banco;
+            cuenta.TipoCuenta = dto.TipoCuenta;
             cuenta.SaldoInicial = dto.SaldoInicial;
             cuenta.UsuarioId = dto.UsuarioId;
 
