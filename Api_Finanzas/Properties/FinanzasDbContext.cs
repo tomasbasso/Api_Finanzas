@@ -44,6 +44,21 @@ namespace Api_Finanzas.Properties
                 .WithMany(c => c.Transacciones)
                 .HasForeignKey(t => t.CategoriaIngresoId)
                 .OnDelete(DeleteBehavior.SetNull);
+
+            // Relación Usuario ↔ Presupuesto
+            modelBuilder.Entity<Presupuesto>()
+           .HasOne(p => p.Usuario)
+           .WithMany(u => u.Presupuestos)
+           .HasForeignKey(p => p.UsuarioId)
+           .OnDelete(DeleteBehavior.Restrict);
+
+            // CategoriaGasto ↔ Presupuesto
+            modelBuilder.Entity<Presupuesto>()
+                .HasOne(p => p.CategoriaGasto)
+                .WithMany(cg => cg.Presupuestos)
+                .HasForeignKey(p => p.CategoriaGastoId)
+                .OnDelete(DeleteBehavior.Restrict);
+
         }
     }
 }

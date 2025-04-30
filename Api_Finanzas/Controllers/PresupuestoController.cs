@@ -1,4 +1,5 @@
 ﻿using Api_Finanzas.Models;
+using Api_Finanzas.ModelsDTO;
 using Api_Finanzas.Properties;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.EntityFrameworkCore;
@@ -17,49 +18,79 @@ namespace Api_Finanzas.Controllers
         }
 
         [HttpGet]
+  
         public async Task<IActionResult> GetPresupuestos()
         {
-            var presupuestos = await _context.Presupuestos
-                .Select(p => new
+            var lista = await _context.Presupuestos
+                .Include(p => p.CategoriaGasto)
+                .Select(p => new VerPresupuestoDto
                 {
-                    p.PresupuestoId,
-                    p.MontoLimite,
-                    p.CategoriaGastoId,
-                    p.UsuarioId
-                }).ToListAsync();
+                    PresupuestoId = p.PresupuestoId,
+                    CategoriaGastoId = p.CategoriaGastoId,
+                    NombreCategoria = p.CategoriaGasto.Nombre,
+                    MontoLimite = p.MontoLimite,
+                    Mes = p.Mes,
+                    Año = p.Año
+                })
+                .ToListAsync();
 
-            return Ok(presupuestos);
+            return Ok(lista);
         }
 
-        [HttpGet("{id}")]
-        public async Task<IActionResult> GetPresupuesto(int id)
-        {
-            var presupuesto = await _context.Presupuestos.FindAsync(id);
-            if (presupuesto == null) return NotFound();
 
-            return Ok(presupuesto);
+        [HttpGet("{id}")]
+        public async Task<ActionResult<VerPresupuestoDto>> GetPresupuesto(int id)
+        {
+            var dto = await _context.Presupuestos
+                .Include(p => p.CategoriaGasto)
+                .Where(p => p.PresupuestoId == id)
+                .Select(p => new VerPresupuestoDto
+                {
+                    PresupuestoId = p.PresupuestoId,
+                    CategoriaGastoId = p.CategoriaGastoId,
+                    NombreCategoria = p.CategoriaGasto.Nombre,
+                    MontoLimite = p.MontoLimite,
+                    Mes = p.Mes,
+                    Año = p.Año
+                })
+                .FirstOrDefaultAsync();
+
+            if (dto == null)
+                return NotFound();
+
+            return Ok(dto);
         }
 
         [HttpPost]
-        public async Task<IActionResult> CrearPresupuesto(Presupuesto presupuesto)
+        public async Task<IActionResult> CrearPresupuesto([FromBody] CrearPresupuestoDto dto)
         {
-            _context.Presupuestos.Add(presupuesto);
+            var entidad = new Presupuesto
+            {
+                UsuarioId = dto.UsuarioId,
+                CategoriaGastoId = dto.CategoriaGastoId,
+                MontoLimite = dto.MontoLimite,
+                Mes = dto.Mes,
+                Año = dto.Año
+            };
+            _context.Presupuestos.Add(entidad);
             await _context.SaveChangesAsync();
-            return Ok(presupuesto);
+            return CreatedAtAction(nameof(GetPresupuesto), new { id = entidad.PresupuestoId }, entidad);
         }
 
         [HttpPut("{id}")]
-        public async Task<IActionResult> EditarPresupuesto(int id, Presupuesto nuevo)
+        public async Task<IActionResult> EditarPresupuesto(int id, [FromBody] EditarPresupuestoDto dto)
         {
-            var presupuesto = await _context.Presupuestos.FindAsync(id);
-            if (presupuesto == null) return NotFound();
+            var p = await _context.Presupuestos.FindAsync(id);
+            if (p == null) return NotFound();
 
-            presupuesto.MontoLimite = nuevo.MontoLimite;
-            presupuesto.CategoriaGastoId = nuevo.CategoriaGastoId;
-            presupuesto.UsuarioId = nuevo.UsuarioId;
+            p.UsuarioId = dto.UsuarioId;
+            p.CategoriaGastoId = dto.CategoriaGastoId;
+            p.MontoLimite = dto.MontoLimite;
+            p.Mes = dto.Mes;
+            p.Año = dto.Año;
 
             await _context.SaveChangesAsync();
-            return Ok(presupuesto);
+            return Ok(p);
         }
 
         [HttpDelete("{id}")]
