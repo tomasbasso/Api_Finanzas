@@ -1,4 +1,5 @@
 ﻿using Api_Finanzas.Models;
+using Api_Finanzas.ModelsDTO;
 using Api_Finanzas.Properties;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.EntityFrameworkCore;
@@ -34,8 +35,17 @@ namespace Api_Finanzas.Controllers
         }
 
         [HttpPost]
-        public async Task<IActionResult> CrearMeta([FromBody] MetaAhorro meta)
+        public async Task<IActionResult> CrearMeta([FromBody] MetaAhorroDto dto)
         {
+            var meta = new MetaAhorro
+            {
+                UsuarioId = dto.UsuarioId,
+                Nombre = dto.Nombre,
+                MontoObjetivo = dto.MontoObjetivo,
+                FechaLimite = dto.FechaLimite,
+                ProgresoActual = dto.ProgresoActual
+            };
+
             _context.MetasAhorro.Add(meta);
             await _context.SaveChangesAsync();
 
@@ -43,27 +53,23 @@ namespace Api_Finanzas.Controllers
         }
 
         [HttpPut("{id}")]
-        public async Task<IActionResult> ActualizarMeta(int id, [FromBody] MetaAhorro meta)
+        public async Task<IActionResult> ActualizarMeta(int id, [FromBody] MetaAhorroDto dto)
         {
-            if (id != meta.MetaId)
-                return BadRequest("El ID no coincide.");
+            var meta = await _context.MetasAhorro.FindAsync(id);
+            if (meta == null)
+                return NotFound();
 
-            _context.Entry(meta).State = EntityState.Modified;
+            meta.Nombre = dto.Nombre;
+            meta.MontoObjetivo = dto.MontoObjetivo;
+            meta.FechaLimite = dto.FechaLimite;
+            meta.ProgresoActual = dto.ProgresoActual;
+            meta.UsuarioId = dto.UsuarioId;
 
-            try
-            {
-                await _context.SaveChangesAsync();
-            }
-            catch (DbUpdateConcurrencyException)
-            {
-                if (!_context.MetasAhorro.Any(m => m.MetaId == id))
-                    return NotFound();
-                else
-                    throw;
-            }
+            await _context.SaveChangesAsync();
 
             return NoContent();
         }
+
 
         [HttpDelete("{id}")]
         public async Task<IActionResult> EliminarMeta(int id)
