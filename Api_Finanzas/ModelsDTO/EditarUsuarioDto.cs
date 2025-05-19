@@ -1,10 +1,9 @@
 ﻿namespace Api_Finanzas.ModelsDTO
 {
-    public class RegisterDto
+    public class EditarUsuarioDto
     {
         public string Nombre { get; set; }
-        public string Email { get; set; }
-        public string Contrasena { get; set; }
         public string Rol { get; set; }
+        public string Contrasena { get; set; }
     }
 }

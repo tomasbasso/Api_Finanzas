@@ -32,7 +32,8 @@ namespace Api_Finanzas.Controllers
             {
                 Nombre = dto.Nombre,
                 Email = dto.Email,
-                ContrasenaHash = BCrypt.Net.BCrypt.HashPassword(dto.Contrasena)
+                ContrasenaHash = BCrypt.Net.BCrypt.HashPassword(dto.Contrasena),
+                Rol = dto.Rol
             };
 
             _context.Usuarios.Add(usuario);
@@ -42,7 +43,8 @@ namespace Api_Finanzas.Controllers
             {
                 UsuarioId = usuario.UsuarioId,
                 Nombre = usuario.Nombre,
-                Email = usuario.Email
+                Email = usuario.Email,
+                Rol = usuario.Rol
             });
         }
         [HttpPost("login")]
@@ -59,7 +61,51 @@ namespace Api_Finanzas.Controllers
             {
                 UsuarioId = usuario.UsuarioId,
                 Nombre = usuario.Nombre,
-                Email = usuario.Email
+                Email = usuario.Email,
+                Rol = usuario.Rol
+            });
+        }
+        [HttpGet]
+        public async Task<ActionResult<IEnumerable<UsuarioDto>>> GetUsuarios()
+        {
+            var usuarios = await _context.Usuarios
+                .Select(u => new UsuarioDto
+                {
+                    UsuarioId = u.UsuarioId,
+                    Nombre = u.Nombre,
+                    Email = u.Email,
+                    Rol = u.Rol
+                })
+                .ToListAsync();
+
+            return Ok(usuarios);
+        }
+        [HttpPut("{id}")]
+        public async Task<IActionResult> EditarUsuarioDto(int id, EditarUsuarioDto dto)
+        {
+            var usuario = await _context.Usuarios.FindAsync(id);
+            if (usuario == null)
+                return NotFound("Usuario no encontrado");
+
+            if (!string.IsNullOrEmpty(dto.Nombre))
+                usuario.Nombre = dto.Nombre;
+
+            if (!string.IsNullOrEmpty(dto.Rol))
+                usuario.Rol = dto.Rol;
+
+            // Solo actualiza el hash si la contraseña fue enviada
+            if (!string.IsNullOrEmpty(dto.Contrasena))
+                usuario.ContrasenaHash = BCrypt.Net.BCrypt.HashPassword(dto.Contrasena);
+
+            _context.Usuarios.Update(usuario);
+            await _context.SaveChangesAsync();
+
+            return Ok(new UsuarioDto
+            {
+                UsuarioId = usuario.UsuarioId,
+                Nombre = usuario.Nombre,
+                Email = usuario.Email,
+                Rol = usuario.Rol
             });
         }
 
@@ -78,7 +124,8 @@ namespace Api_Finanzas.Controllers
                 {
                     UsuarioId = u.UsuarioId,
                     Nombre = u.Nombre,
-                    Email = u.Email
+                    Email = u.Email,
+                    Rol = u.Rol
                 })
                 .FirstOrDefaultAsync();
 
