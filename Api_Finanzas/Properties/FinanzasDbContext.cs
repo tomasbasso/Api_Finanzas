@@ -58,7 +58,10 @@ namespace Api_Finanzas.Properties
                 .WithMany(cg => cg.Presupuestos)
                 .HasForeignKey(p => p.CategoriaGastoId)
                 .OnDelete(DeleteBehavior.Restrict);
-
+            modelBuilder.Entity<Usuario>()
+                  .HasMany(u => u.Cuentas)
+                  .WithOne(c => c.Usuario)
+                  .OnDelete(DeleteBehavior.Cascade);
         }
     }
 }
