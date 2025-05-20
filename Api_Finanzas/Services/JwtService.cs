@@ -6,35 +6,37 @@ using System.Text;
 
 namespace Api_Finanzas.Services
 {
-    public class JwtService : IJwtService
+    public class JwtService
     {
-        private readonly IConfiguration _config;
+        private readonly IConfiguration _configuration;
 
-        public JwtService(IConfiguration config)
+        public JwtService(IConfiguration configuration)
         {
-            _config = config;
+            _configuration = configuration;
         }
 
         public string GenerarToken(Usuario usuario)
         {
             var claims = new[]
             {
-        new Claim("userId", usuario.UsuarioId.ToString()), // Cambiar NameIdentifier por "userId"
-        new Claim("email", usuario.Email)
-                };
+            new Claim(ClaimTypes.NameIdentifier, usuario.UsuarioId.ToString()),
+            new Claim(ClaimTypes.Email, usuario.Email),
+            new Claim(ClaimTypes.Role, usuario.Rol)
+        };
 
-            var key = new SymmetricSecurityKey(Encoding.UTF8.GetBytes(_config["Jwt:Key"]));
+            var key = new SymmetricSecurityKey(Encoding.UTF8.GetBytes(_configuration["Jwt:Key"]));
             var creds = new SigningCredentials(key, SecurityAlgorithms.HmacSha256);
 
             var token = new JwtSecurityToken(
-                issuer: _config["Jwt:Issuer"],
-                audience: _config["Jwt:Audience"],
+                issuer: _configuration["Jwt:Issuer"],
+                audience: _configuration["Jwt:Audience"],
                 claims: claims,
-                expires: DateTime.UtcNow.AddHours(6),
-                signingCredentials: creds);
+                expires: DateTime.UtcNow.AddHours(2),
+                signingCredentials: creds
+            );
 
             return new JwtSecurityTokenHandler().WriteToken(token);
         }
-
     }
+
 }

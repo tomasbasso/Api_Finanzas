@@ -1,11 +1,13 @@
 ﻿using Api_Finanzas.Models;
 using Api_Finanzas.ModelsDTO;
 using Api_Finanzas.Properties;
+using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.EntityFrameworkCore;
 
 namespace Api_Finanzas.Controllers
 {
+    [Authorize]
     [ApiController]
     [Route("api/[controller]")]
     public class CuentasController : ControllerBase

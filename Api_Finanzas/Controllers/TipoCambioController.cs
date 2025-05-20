@@ -3,9 +3,11 @@ using Api_Finanzas.Properties;
 using Api_Finanzas.ModelsDTO;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.EntityFrameworkCore;
+using Microsoft.AspNetCore.Authorization;
 
 namespace Api_Finanzas.Controllers
 {
+    [Authorize]
     [ApiController]
     [Route("api/[controller]")]
     public class TipoCambioController : ControllerBase

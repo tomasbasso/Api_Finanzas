@@ -15,12 +15,14 @@ namespace Api_Finanzas.Controllers
     public class UsuariosController : ControllerBase
     {
         private readonly FinanzasDbContext _context;
-        //private readonly IJwtService _jwtService;
-
-        public UsuariosController(FinanzasDbContext context)
+        
+        private readonly IConfiguration _configuration;
+        public UsuariosController(FinanzasDbContext context, IConfiguration configuration)
         {
             _context = context;
+            _configuration = configuration;
         }
+      
 
         [HttpPost("register")]
         public async Task<IActionResult> Register(RegisterDto dto)
@@ -54,17 +56,22 @@ namespace Api_Finanzas.Controllers
             if (usuario == null || !BCrypt.Net.BCrypt.Verify(dto.Contrasena, usuario.ContrasenaHash))
                 return Unauthorized("Credenciales inválidas");
 
-            // Simulamos una sesión guardando el email
-            SesionActual.Email = usuario.Email;
+            var jwtService = new JwtService(_configuration);
+            var token = jwtService.GenerarToken(usuario);
 
-            return Ok(new UsuarioDto
+            return Ok(new
             {
-                UsuarioId = usuario.UsuarioId,
-                Nombre = usuario.Nombre,
-                Email = usuario.Email,
-                Rol = usuario.Rol
+                Token = token,
+                Usuario = new UsuarioDto
+                {
+                    UsuarioId = usuario.UsuarioId,
+                    Nombre = usuario.Nombre,
+                    Email = usuario.Email,
+                    Rol = usuario.Rol
+                }
             });
         }
+        [Authorize]
         [HttpGet]
         public async Task<ActionResult<IEnumerable<UsuarioDto>>> GetUsuarios()
         {
@@ -80,6 +87,7 @@ namespace Api_Finanzas.Controllers
 
             return Ok(usuarios);
         }
+        [Authorize]
         [HttpPut("{id}")]
         public async Task<IActionResult> EditarUsuarioDto(int id, EditarUsuarioDto dto)
         {
@@ -108,6 +116,7 @@ namespace Api_Finanzas.Controllers
                 Rol = usuario.Rol
             });
         }
+        [Authorize]
         [HttpDelete("{id}")]
         public async Task<IActionResult> EliminarUsuario(int id)
         {
@@ -165,7 +174,7 @@ namespace Api_Finanzas.Controllers
         }
 
 
-
+        [Authorize]
         [HttpGet("me")]
         public async Task<IActionResult> Me()
         {
