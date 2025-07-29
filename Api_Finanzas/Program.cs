@@ -10,7 +10,7 @@ var builder = WebApplication.CreateBuilder(args);
 
 // Conexión a DB (ajustar si es necesario)
 builder.Services.AddDbContext<FinanzasDbContext>(options =>
-    options.UseSqlServer(builder.Configuration.GetConnectionString("DefaultConnection")));
+    options.UseNpgsql(builder.Configuration.GetConnectionString("DefaultConnection")));
 
 // --- SWAGGER CON JWT ---
 builder.Services.AddEndpointsApiExplorer();
