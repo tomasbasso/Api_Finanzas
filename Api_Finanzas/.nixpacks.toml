@@ -1,2 +1,8 @@
 ﻿[variables]
 NIXPACKS_DOTNET_VERSION = "8.0"
+
+[phases.setup]
+nixPkgs = ["dotnet-sdk_8"]
+
+[start]
+cmd = "dotnet Api_Finanzas.dll"
