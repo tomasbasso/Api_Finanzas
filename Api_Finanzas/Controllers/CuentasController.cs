@@ -22,6 +22,11 @@ namespace Api_Finanzas.Controllers
         [HttpGet]
         public async Task<IActionResult> GetCuentas()
         {
+            var userIdClaim = User.FindFirst(System.Security.Claims.ClaimTypes.NameIdentifier)?.Value;
+            if (userIdClaim == null)
+                return Unauthorized();
+            var userId = int.Parse(userIdClaim);
+
             var cuentas = await _context.CuentasBancarias
                 .Select(c => new CuentaBancariaDto
                 {
@@ -30,7 +35,7 @@ namespace Api_Finanzas.Controllers
                     Banco = c.Banco,
                     TipoCuenta = c.TipoCuenta,
                     SaldoInicial = c.SaldoInicial,
-                    UsuarioId = c.UsuarioId
+                    UsuarioId = userId
                 })
                 .ToListAsync();
 
@@ -40,6 +45,10 @@ namespace Api_Finanzas.Controllers
         [HttpGet("{id}")]
         public async Task<IActionResult> GetCuenta(int id)
         {
+            var userIdClaim = User.FindFirst(System.Security.Claims.ClaimTypes.NameIdentifier)?.Value;
+            if (userIdClaim == null)
+                return Unauthorized();
+            var userId = int.Parse(userIdClaim);
             var cuenta = await _context.CuentasBancarias.FindAsync(id);
             if (cuenta == null) return NotFound();
 
@@ -50,7 +59,7 @@ namespace Api_Finanzas.Controllers
                 Banco = cuenta.Banco,
                 TipoCuenta= cuenta.TipoCuenta,
                 SaldoInicial = cuenta.SaldoInicial,
-                UsuarioId = cuenta.UsuarioId
+                UsuarioId = userId
             });
         }
 

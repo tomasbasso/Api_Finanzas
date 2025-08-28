@@ -66,9 +66,13 @@ namespace Api_Finanzas.Controllers
         [HttpPost]
         public async Task<IActionResult> CrearPresupuesto([FromBody] CrearPresupuestoDto dto)
         {
+            var userIdClaim = User.FindFirst(System.Security.Claims.ClaimTypes.NameIdentifier)?.Value;
+            if (userIdClaim == null)
+                return Unauthorized();
+            var userId = int.Parse(userIdClaim);
             var entidad = new Presupuesto
             {
-                UsuarioId = dto.UsuarioId,
+                UsuarioId = userId,
                 CategoriaGastoId = dto.CategoriaGastoId,
                 MontoLimite = dto.MontoLimite,
                 Mes = dto.Mes,
@@ -82,10 +86,14 @@ namespace Api_Finanzas.Controllers
         [HttpPut("{id}")]
         public async Task<IActionResult> EditarPresupuesto(int id, [FromBody] EditarPresupuestoDto dto)
         {
+            var userIdClaim = User.FindFirst(System.Security.Claims.ClaimTypes.NameIdentifier)?.Value;
+            if (userIdClaim == null)
+                return Unauthorized();
+            var userId = int.Parse(userIdClaim);
             var p = await _context.Presupuestos.FindAsync(id);
             if (p == null) return NotFound();
 
-            p.UsuarioId = dto.UsuarioId;
+            p.UsuarioId = userId;
             p.CategoriaGastoId = dto.CategoriaGastoId;
             p.MontoLimite = dto.MontoLimite;
             p.Mes = dto.Mes;

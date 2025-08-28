@@ -37,6 +37,10 @@ namespace Api_Finanzas.Controllers
         [HttpGet("{id}")]
         public async Task<IActionResult> Get(int id)
         {
+            var userIdClaim = User.FindFirst(System.Security.Claims.ClaimTypes.NameIdentifier)?.Value;
+            if (userIdClaim == null)
+                return Unauthorized();
+            var userId = int.Parse(userIdClaim);
             var categoria = await _context.CategoriasIngreso
                 .Where(c => c.CategoriaIngresoId == id)
                 .Select(c => new CategoriaIngresoDto
@@ -56,10 +60,16 @@ namespace Api_Finanzas.Controllers
         [HttpPost]
         public async Task<IActionResult> Create(CategoriaIngresoCreateDto dto)
         {
+            
+            var userIdClaim = User.FindFirst(System.Security.Claims.ClaimTypes.NameIdentifier)?.Value;
+            if (userIdClaim == null)
+                return Unauthorized();
+            var userId = int.Parse(userIdClaim);
+
             var nueva = new CategoriaIngreso
             {
                 Nombre = dto.Nombre,
-                UsuarioId = dto.UsuarioId
+                UsuarioId = userId    
             };
 
             _context.CategoriasIngreso.Add(nueva);
@@ -76,12 +86,18 @@ namespace Api_Finanzas.Controllers
         [HttpPut("{id}")]
         public async Task<IActionResult> Update(int id, CategoriaIngresoCreateDto dto)
         {
+        
+            var userIdClaim = User.FindFirst(System.Security.Claims.ClaimTypes.NameIdentifier)?.Value;
+            if (userIdClaim == null)
+                return Unauthorized();
+            var userId = int.Parse(userIdClaim);
+
             var categoria = await _context.CategoriasIngreso.FindAsync(id);
             if (categoria == null)
                 return NotFound();
 
             categoria.Nombre = dto.Nombre;
-            categoria.UsuarioId = dto.UsuarioId;
+            categoria.UsuarioId = userId;
 
             await _context.SaveChangesAsync();
             return NoContent();

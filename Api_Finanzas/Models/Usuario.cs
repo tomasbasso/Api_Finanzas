@@ -9,6 +9,8 @@ namespace Api_Finanzas.Models
         public string Nombre { get; set; }
         public string Email { get; set; }
         public string ContrasenaHash { get; set; }
+
+        public bool IsActive { get; set; } = true;
         public DateTime FechaRegistro { get; set; }=DateTime.UtcNow;
         public string Rol { get; set; }
         public ICollection<CuentaBancaria> Cuentas { get; set; }

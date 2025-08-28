@@ -51,30 +51,49 @@ namespace Api_Finanzas.Controllers
         }
 
         [HttpPost]
-        public async Task<IActionResult> CrearCategoria(CategoriaGastoDto dto)
+        public async Task<IActionResult> CrearCategoria([FromBody] CrearCategoriaGastoDto dto)
         {
-            var categoria = new CategoriaGasto
+           
+            var userIdClaim = User.FindFirst(System.Security.Claims.ClaimTypes.NameIdentifier)?.Value;
+            if (userIdClaim == null)
+                return Unauthorized();
+            var userId = int.Parse(userIdClaim);
+
+            var nueva = new CategoriaGasto
             {
                 Nombre = dto.Nombre,
-                UsuarioId = dto.UsuarioId
+                UsuarioId = userId    // <-- asignamos el que viene del JWT
             };
 
-            _context.CategoriasGasto.Add(categoria);
+            _context.CategoriasGasto.Add(nueva);
             await _context.SaveChangesAsync();
 
-            dto.CategoriaGastoId = categoria.CategoriaGastoId;
-            return CreatedAtAction(nameof(GetCategoria), new { id = dto.CategoriaGastoId }, dto);
+            var resultado = new CategoriaGastoDto
+            {
+                CategoriaGastoId = nueva.CategoriaGastoId,
+                Nombre = nueva.Nombre,
+                UsuarioId = nueva.UsuarioId
+            };
+
+            return CreatedAtAction(nameof(GetCategoria),
+                                   new { id = nueva.CategoriaGastoId },
+                                   resultado);
         }
 
         [HttpPut("{id}")]
         public async Task<IActionResult> ActualizarCategoria(int id, CategoriaGastoDto dto)
         {
+            var userIdClaim = User.FindFirst(System.Security.Claims.ClaimTypes.NameIdentifier)?.Value;
+            if (userIdClaim == null)
+                return Unauthorized();
+            var userId = int.Parse(userIdClaim);
+
             var categoria = await _context.CategoriasGasto.FindAsync(id);
             if (categoria == null)
                 return NotFound();
 
             categoria.Nombre = dto.Nombre;
-            categoria.UsuarioId = dto.UsuarioId;
+            categoria.UsuarioId = userId;
 
             await _context.SaveChangesAsync();
             return NoContent();

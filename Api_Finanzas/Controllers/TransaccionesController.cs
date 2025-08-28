@@ -61,6 +61,11 @@ namespace Api_Finanzas.Controllers
         [HttpPost]
         public async Task<IActionResult> Crear(TransaccionCrearDto dto)
         {
+            var userIdClaim = User.FindFirst(System.Security.Claims.ClaimTypes.NameIdentifier)?.Value;
+            if (userIdClaim == null)
+                return Unauthorized();
+            var userId = int.Parse(userIdClaim);
+
             var transaccion = new Transaccion
             {
                 Monto = dto.Monto,
@@ -69,7 +74,7 @@ namespace Api_Finanzas.Controllers
                 Descripcion = dto.Descripcion,
                 CuentaId = dto.CuentaId,
                 CategoriaGastoId = dto.CategoriaId,
-                UsuarioId = dto.UsuarioId
+                UsuarioId = userId
             };
 
             _context.Transacciones.Add(transaccion);
@@ -81,6 +86,10 @@ namespace Api_Finanzas.Controllers
         [HttpPut("{id}")]
         public async Task<IActionResult> Editar(int id, TransaccionCrearDto dto)
         {
+            var userIdClaim = User.FindFirst(System.Security.Claims.ClaimTypes.NameIdentifier)?.Value;
+            if (userIdClaim == null)
+                return Unauthorized();
+            var userId = int.Parse(userIdClaim);
             var t = await _context.Transacciones.FindAsync(id);
             if (t == null) return NotFound();
 
@@ -90,7 +99,7 @@ namespace Api_Finanzas.Controllers
             t.Descripcion = dto.Descripcion;
             t.CuentaId = dto.CuentaId;
             t.CategoriaGastoId = dto.CategoriaId;
-            t.UsuarioId = dto.UsuarioId;
+            t.UsuarioId = userId;
 
             await _context.SaveChangesAsync();
             return NoContent();

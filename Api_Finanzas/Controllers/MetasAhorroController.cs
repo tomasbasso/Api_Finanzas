@@ -39,9 +39,14 @@ namespace Api_Finanzas.Controllers
         [HttpPost]
         public async Task<IActionResult> CrearMeta([FromBody] MetaAhorroDto dto)
         {
+            var userIdClaim = User.FindFirst(System.Security.Claims.ClaimTypes.NameIdentifier)?.Value;
+            if (userIdClaim == null)
+                return Unauthorized();
+            var userId = int.Parse(userIdClaim);
+
             var meta = new MetaAhorro
             {
-                UsuarioId = dto.UsuarioId,
+                UsuarioId = userId,
                 Nombre = dto.Nombre,
                 MontoObjetivo = dto.MontoObjetivo,
                 FechaLimite = dto.FechaLimite,
@@ -57,6 +62,10 @@ namespace Api_Finanzas.Controllers
         [HttpPut("{id}")]
         public async Task<IActionResult> ActualizarMeta(int id, [FromBody] MetaAhorroDto dto)
         {
+            var userIdClaim = User.FindFirst(System.Security.Claims.ClaimTypes.NameIdentifier)?.Value;
+            if (userIdClaim == null)
+                return Unauthorized();
+            var userId = int.Parse(userIdClaim);
             var meta = await _context.MetasAhorro.FindAsync(id);
             if (meta == null)
                 return NotFound();
@@ -65,7 +74,7 @@ namespace Api_Finanzas.Controllers
             meta.MontoObjetivo = dto.MontoObjetivo;
             meta.FechaLimite = dto.FechaLimite;
             meta.ProgresoActual = dto.ProgresoActual;
-            meta.UsuarioId = dto.UsuarioId;
+            meta.UsuarioId = userId;
 
             await _context.SaveChangesAsync();
 
