@@ -62,7 +62,7 @@ namespace Api_Finanzas.Controllers
             var nueva = new CategoriaGasto
             {
                 Nombre = dto.Nombre,
-                UsuarioId = userId    // <-- asignamos el que viene del JWT
+                UsuarioId = userId    
             };
 
             _context.CategoriasGasto.Add(nueva);

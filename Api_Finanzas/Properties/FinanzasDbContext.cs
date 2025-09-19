@@ -22,7 +22,7 @@ namespace Api_Finanzas.Properties
 
         protected override void OnModelCreating(ModelBuilder modelBuilder)
         {
-            // 1) Convenciones de nombres en minúsculas
+           
             foreach (var entity in modelBuilder.Model.GetEntityTypes())
             {
                 entity.SetTableName(entity.GetTableName().ToLower());
@@ -32,11 +32,11 @@ namespace Api_Finanzas.Properties
                 }
             }
 
-            // 2) Filtro global para soft-delete de Usuario
+           
             modelBuilder.Entity<Usuario>()
                 .HasQueryFilter(u => u.IsActive);
 
-            // 3) Relaciones y comportamientos de borrado
+          
             modelBuilder.Entity<CategoriaGasto>()
                 .HasOne(c => c.Usuario)
                 .WithMany()
@@ -61,21 +61,21 @@ namespace Api_Finanzas.Properties
                 .HasForeignKey(t => t.CategoriaIngresoId)
                 .OnDelete(DeleteBehavior.SetNull);
 
-            // Usuario ↔ Presupuesto
+     
             modelBuilder.Entity<Presupuesto>()
                 .HasOne(p => p.Usuario)
                 .WithMany(u => u.Presupuestos)
                 .HasForeignKey(p => p.UsuarioId)
                 .OnDelete(DeleteBehavior.Restrict);
 
-            // CategoriaGasto ↔ Presupuesto
+           
             modelBuilder.Entity<Presupuesto>()
                 .HasOne(p => p.CategoriaGasto)
                 .WithMany(cg => cg.Presupuestos)
                 .HasForeignKey(p => p.CategoriaGastoId)
                 .OnDelete(DeleteBehavior.Restrict);
 
-            // Usuario ↔ Cuentas (Cascade delete de cuentas al deshabilitar usuario)
+        
             modelBuilder.Entity<Usuario>()
                 .HasMany(u => u.Cuentas)
                 .WithOne(c => c.Usuario)

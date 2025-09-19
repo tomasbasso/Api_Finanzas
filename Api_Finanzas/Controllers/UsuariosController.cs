@@ -77,7 +77,7 @@ namespace Api_Finanzas.Controllers
         public async Task<ActionResult<IEnumerable<UsuarioDto>>> GetUsuarios()
         {
             var usuarios = await _context.Usuarios
-                .Where(u => u.IsActive)   // <-- sólo los activos
+                .Where(u => u.IsActive)   // <-- activos
                 .Select(u => new UsuarioDto
                 {
                     UsuarioId = u.UsuarioId,
@@ -145,7 +145,7 @@ namespace Api_Finanzas.Controllers
         [HttpGet("me")]
         public async Task<IActionResult> Me()
         {
-            // Tomar email del token (según cómo lo emitas)
+            // Tomar email del token 
             var email =
                 User.FindFirstValue(ClaimTypes.Email) ??
                 User.FindFirstValue(JwtRegisteredClaimNames.Email) ??
