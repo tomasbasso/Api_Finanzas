@@ -12,13 +12,13 @@ namespace Api_Finanzas.Models
         public int? CategoriaIngresoId { get; set; }
         public decimal Monto { get; set; }
         public DateTime Fecha { get; set; }
-        public string Tipo { get; set; } // "Gasto" o "Ingreso"
-        public string Descripcion { get; set; }
+    public string Tipo { get; set; } = string.Empty; // "Gasto" o "Ingreso"
+    public string Descripcion { get; set; } = string.Empty;
 
-        public Usuario Usuario { get; set; }
-        public CuentaBancaria Cuenta { get; set; }
-        public CategoriaGasto CategoriaGasto { get; set; }
-        public CategoriaIngreso CategoriaIngreso { get; set; }
+    public Usuario Usuario { get; set; } = null!;
+    public CuentaBancaria Cuenta { get; set; } = null!;
+    public CategoriaGasto CategoriaGasto { get; set; } = null!;
+    public CategoriaIngreso CategoriaIngreso { get; set; } = null!;
     }
 
 }

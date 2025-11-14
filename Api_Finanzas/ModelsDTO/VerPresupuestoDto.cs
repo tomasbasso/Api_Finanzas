@@ -4,7 +4,7 @@
     {
         public int PresupuestoId { get; set; }
         public int CategoriaGastoId { get; set; }
-        public string NombreCategoria { get; set; }
+    public string NombreCategoria { get; set; } = string.Empty;
         public decimal MontoLimite { get; set; }
         public int Mes { get; set; }
         public int Año { get; set; }

@@ -54,7 +54,31 @@ namespace Api_Finanzas.Controllers
         public async Task<IActionResult> Login(LoginDto dto)
         {
             var usuario = await _context.Usuarios.FirstOrDefaultAsync(u => u.Email == dto.Email);
-            if (usuario == null || !BCrypt.Net.BCrypt.Verify(dto.Contrasena, usuario.ContrasenaHash))
+            if (usuario == null)
+                return Unauthorized("Credenciales inválidas");
+
+            var passwordGuardada = usuario.ContrasenaHash ?? string.Empty;
+            var passwordEsHash = passwordGuardada.StartsWith("$2", StringComparison.Ordinal);
+            var credencialesValidas = false;
+
+            if (passwordEsHash)
+            {
+                credencialesValidas = BCrypt.Net.BCrypt.Verify(dto.Contrasena, passwordGuardada);
+            }
+            else
+            {
+                credencialesValidas = passwordGuardada == dto.Contrasena;
+
+                if (credencialesValidas)
+                {
+                    // Usuario legado: normalizamos guardando el hash bcrypt
+                    usuario.ContrasenaHash = BCrypt.Net.BCrypt.HashPassword(dto.Contrasena);
+                    _context.Usuarios.Update(usuario);
+                    await _context.SaveChangesAsync();
+                }
+            }
+
+            if (!credencialesValidas)
                 return Unauthorized("Credenciales inválidas");
 
             var jwtService = new JwtService(_configuration);

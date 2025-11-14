@@ -16,10 +16,10 @@ namespace Api_Finanzas.Models
             public int Año { get; set; }
 
             [ForeignKey(nameof(UsuarioId))]
-            public Usuario Usuario { get; set; }
+            public Usuario Usuario { get; set; } = null!;
 
             [ForeignKey(nameof(CategoriaGastoId))]
-            public CategoriaGasto CategoriaGasto { get; set; }
+            public CategoriaGasto CategoriaGasto { get; set; } = null!;
 
         }
     

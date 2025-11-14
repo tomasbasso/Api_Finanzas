@@ -8,7 +8,7 @@
         public string Tipo { get; set; } = null!; // "Ingreso" o "Gasto"
         public string? Descripcion { get; set; }
         public int CuentaId { get; set; }
-        public int CategoriaId { get; set; }
+        public int? CategoriaId { get; set; }
         public int UsuarioId { get; set; }
     }
 }

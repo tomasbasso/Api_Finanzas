@@ -4,7 +4,12 @@ using Microsoft.AspNetCore.Authentication.JwtBearer;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.IdentityModel.Tokens;
 using System.Text;
-using Microsoft.OpenApi.Models; 
+using Microsoft.OpenApi.Models;
+using Microsoft.AspNetCore.Mvc;
+using Microsoft.AspNetCore.Diagnostics;
+using FluentValidation;
+using FluentValidation.AspNetCore;
+using Api_Finanzas;
 var builder = WebApplication.CreateBuilder(args);
 
 
@@ -17,12 +22,16 @@ builder.Services.AddEndpointsApiExplorer();
 builder.Services.AddSwaggerGen(c =>
 {
     c.SwaggerDoc("v1", new OpenApiInfo { Title = "Api_Finanzas", Version = "v1" });
+    c.MapType<DateOnly>(() => new OpenApiSchema { Type = "string", Format = "date" });
+    c.MapType<TimeOnly>(() => new OpenApiSchema { Type = "string", Format = "time" });
+    c.CustomSchemaIds(type => type.FullName!.Replace("+", "."));
+    c.ResolveConflictingActions(apiDescriptions => apiDescriptions.First());
 
-    // --- Configuración JWT para Swagger ---
+    // --- Configuraciï¿½n JWT para Swagger ---
     c.AddSecurityDefinition("Bearer", new OpenApiSecurityScheme
     {
         Description = @"JWT Authorization header usando el esquema Bearer. 
-                        Ingresá 'Bearer' [espacio] y luego tu token.
+                        Ingresï¿½ 'Bearer' [espacio] y luego tu token.
                         Ejemplo: 'Bearer 12345abcdef'",
         Name = "Authorization",
         In = ParameterLocation.Header,
@@ -49,7 +58,7 @@ builder.Services.AddSwaggerGen(c =>
     });
 });
 
-// --- AUTENTICACIÓN JWT ---
+// --- AUTENTICACIï¿½N JWT ---
 builder.Services.AddAuthentication(JwtBearerDefaults.AuthenticationScheme)
     .AddJwtBearer(options =>
     {
@@ -63,28 +72,41 @@ builder.Services.AddAuthentication(JwtBearerDefaults.AuthenticationScheme)
             ValidIssuer = builder.Configuration["Jwt:Issuer"],
             ValidAudience = builder.Configuration["Jwt:Audience"],
             IssuerSigningKey = new SymmetricSecurityKey(
-        Encoding.UTF8.GetBytes(builder.Configuration["Jwt:Key"]))
+        Encoding.UTF8.GetBytes(builder.Configuration["Jwt:Key"]!))
         };
     });
-
+builder.Services.AddScoped<ITransaccionesService, TransaccionesService>();
 builder.Services.AddAuthorization();
-
 // Controladores
 builder.Services.AddControllers();
 
+// FluentValidation
+builder.Services.AddFluentValidationAutoValidation();
+builder.Services.AddValidatorsFromAssemblyContaining<Api_Finanzas.Validators.TransaccionCrearValidator>();
+
+builder.Services.AddProblemDetails(options =>
+{
+    options.CustomizeProblemDetails = ctx =>
+    {
+        ctx.ProblemDetails.Extensions["traceId"] = ctx.HttpContext.TraceIdentifier;
+    };
+});
+builder.Services.AddExceptionHandler<GlobalExceptionHandler>();
+builder.Services.AddCors(o =>
+{
+    o.AddPolicy("app", p => p
+        .WithOrigins("http://localhost:5125", "https://localhost:7125") // ajustï¿½ segï¿½n tu cliente
+        .AllowAnyHeader()
+        .AllowAnyMethod());
+});
+
 var app = builder.Build();
-
-
+app.UseExceptionHandler();
 app.UseSwagger();
 app.UseSwaggerUI();
-
 app.UseHttpsRedirection();
-
-app.UseCors(); // ? Siempre antes de Auth
-
+app.UseCors("app");
 app.UseAuthentication();
 app.UseAuthorization();
-
 app.MapControllers();
-
 app.Run();

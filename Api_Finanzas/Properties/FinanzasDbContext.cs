@@ -10,25 +10,32 @@ namespace Api_Finanzas.Properties
         {
         }
 
-        public DbSet<Usuario> Usuarios { get; set; }
-        public DbSet<CuentaBancaria> CuentasBancarias { get; set; }
-        public DbSet<CategoriaGasto> CategoriasGasto { get; set; }
-        public DbSet<CategoriaIngreso> CategoriasIngreso { get; set; }
-        public DbSet<Transaccion> Transacciones { get; set; }
-        public DbSet<Presupuesto> Presupuestos { get; set; }
-        public DbSet<MetaAhorro> MetasAhorro { get; set; }
-        public DbSet<Alerta> Alertas { get; set; }
-        public DbSet<TipoCambio> TiposCambio { get; set; }
+    public DbSet<Usuario> Usuarios { get; set; } = null!;
+    public DbSet<CuentaBancaria> CuentasBancarias { get; set; } = null!;
+    public DbSet<CategoriaGasto> CategoriasGasto { get; set; } = null!;
+    public DbSet<CategoriaIngreso> CategoriasIngreso { get; set; } = null!;
+    public DbSet<Transaccion> Transacciones { get; set; } = null!;
+    public DbSet<Presupuesto> Presupuestos { get; set; } = null!;
+    public DbSet<MetaAhorro> MetasAhorro { get; set; } = null!;
+    public DbSet<Alerta> Alertas { get; set; } = null!;
+    public DbSet<TipoCambio> TiposCambio { get; set; } = null!;
 
         protected override void OnModelCreating(ModelBuilder modelBuilder)
         {
            
             foreach (var entity in modelBuilder.Model.GetEntityTypes())
             {
-                entity.SetTableName(entity.GetTableName().ToLower());
+                var tableName = entity.GetTableName();
+                if (!string.IsNullOrEmpty(tableName))
+                {
+                    entity.SetTableName(tableName.ToLower());
+                }
                 foreach (var property in entity.GetProperties())
                 {
-                    property.SetColumnName(property.Name.ToLower());
+                    if (!string.IsNullOrEmpty(property.Name))
+                    {
+                        property.SetColumnName(property.Name.ToLower());
+                    }
                 }
             }
 

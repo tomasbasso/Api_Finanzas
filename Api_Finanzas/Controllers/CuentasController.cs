@@ -4,6 +4,7 @@ using Api_Finanzas.Properties;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.EntityFrameworkCore;
+using Api_Finanzas.Services;
 
 namespace Api_Finanzas.Controllers
 {
@@ -13,10 +14,12 @@ namespace Api_Finanzas.Controllers
     public class CuentasController : ControllerBase
     {
         private readonly FinanzasDbContext _context;
+        private readonly ITransaccionesService _transService;
 
-        public CuentasController(FinanzasDbContext context)
+        public CuentasController(FinanzasDbContext context, ITransaccionesService transService)
         {
             _context = context;
+            _transService = transService;
         }
 
         [HttpGet]
@@ -105,6 +108,13 @@ namespace Api_Finanzas.Controllers
 
             _context.CuentasBancarias.Remove(cuenta);
             await _context.SaveChangesAsync();
+            return NoContent();
+        }
+
+        [HttpPost("recalcular")]
+        public async Task<IActionResult> RecalcularSaldos(CancellationToken ct)
+        {
+            await _transService.RecalcularSaldosAsync(ct);
             return NoContent();
         }
     }

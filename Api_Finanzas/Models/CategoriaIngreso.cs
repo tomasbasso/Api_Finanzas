@@ -6,11 +6,11 @@ namespace Api_Finanzas.Models
     {
         [Key]
         public int CategoriaIngresoId { get; set; }
-        public string Nombre { get; set; }
-        public int? UsuarioId { get; set; }
+    public string Nombre { get; set; } = string.Empty;
+    public int? UsuarioId { get; set; } = null;
 
-        public Usuario Usuario { get; set; }
-        public ICollection<Transaccion> Transacciones { get; set; }
+    public Usuario Usuario { get; set; } = null!;
+    public ICollection<Transaccion> Transacciones { get; set; } = new List<Transaccion>();
     }
 
 }

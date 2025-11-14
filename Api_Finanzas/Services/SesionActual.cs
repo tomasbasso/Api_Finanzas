@@ -2,6 +2,6 @@
 {
     public static class SesionActual
     {
-        public static string Email { get; set; }
+    public static string Email { get; set; } = string.Empty;
     }
 }
