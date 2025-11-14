@@ -103,10 +103,14 @@ builder.Services.AddCors(o =>
 var app = builder.Build();
 app.UseExceptionHandler();
 app.UseSwagger();
-app.UseSwaggerUI();
+app.UseSwaggerUI(c =>
+{
+    c.SwaggerEndpoint("/swagger/v1/swagger.json", "Api Finanzas v1");
+});
 app.UseHttpsRedirection();
 app.UseCors("app");
 app.UseAuthentication();
 app.UseAuthorization();
+app.MapGet("/", () => "API Finanzas funcionando");
 app.MapControllers();
 app.Run();
