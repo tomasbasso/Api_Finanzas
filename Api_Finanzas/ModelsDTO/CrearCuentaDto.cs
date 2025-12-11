@@ -6,6 +6,5 @@
         public string Banco { get; set; } = null!;
         public string TipoCuenta { get; set; } = null!;
         public decimal SaldoInicial { get; set; }
-        public int UsuarioId { get; set; }
     }
 }

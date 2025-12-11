@@ -1,4 +1,4 @@
-﻿// Services/TransaccionesService.cs
+// Services/TransaccionesService.cs
 using Api_Finanzas.Models;
 using Api_Finanzas.ModelsDTO;
 using Api_Finanzas.Properties;
@@ -16,16 +16,14 @@ public sealed class TransaccionesService : ITransaccionesService
         if (dto.Tipo != "Gasto" && dto.Tipo != "Ingreso")
             throw new DomainException("Tipo debe ser 'Gasto' o 'Ingreso'.");
 
-        // Validación de categoría según tipo (si viene)
         if (dto.CategoriaId.HasValue)
         {
             var catId = dto.CategoriaId.Value;
-            // Verificar que la categoria exista y pertenezca al usuario (ownership)
             var existe = dto.Tipo == "Gasto"
                 ? await _db.CategoriasGasto.AnyAsync(c => c.CategoriaGastoId == catId && c.UsuarioId == usuarioId, ct)
                 : await _db.CategoriasIngreso.AnyAsync(c => c.CategoriaIngresoId == catId && c.UsuarioId == usuarioId, ct);
 
-            if (!existe) throw new DomainException($"La categoría de {dto.Tipo.ToLower()} no existe o no pertenece al usuario.");
+            if (!existe) throw new DomainException($"La categoria de {dto.Tipo.ToLower()} no existe o no pertenece al usuario.");
         }
 
         var entity = new Transaccion
@@ -40,19 +38,17 @@ public sealed class TransaccionesService : ITransaccionesService
             Descripcion = dto.Descripcion ?? string.Empty
         };
 
-        // Usar transacción DB para asegurar consistencia saldo + inserción
         if (_db.Database.IsRelational())
         {
             await using var tx = await _db.Database.BeginTransactionAsync(ct);
             try
             {
                 _db.Transacciones.Add(entity);
-                // Ajustar saldo de la cuenta
                 var cuenta = await _db.CuentasBancarias.FirstOrDefaultAsync(c => c.CuentaId == dto.CuentaId && c.UsuarioId == usuarioId, ct)
-                            ?? throw new DomainException("Cuenta no encontrada o no pertenece al usuario.");
+                             ?? throw new DomainException("Cuenta no encontrada o no pertenece al usuario.");
 
                 if (dto.Tipo == "Gasto") cuenta.SaldoActual -= dto.Monto;
-                else if (dto.Tipo == "Ingreso") cuenta.SaldoActual += dto.Monto;
+                else cuenta.SaldoActual += dto.Monto;
 
                 await _db.SaveChangesAsync(ct);
                 await tx.CommitAsync(ct);
@@ -64,23 +60,25 @@ public sealed class TransaccionesService : ITransaccionesService
                 throw;
             }
         }
-        else
-        {
-            _db.Transacciones.Add(entity);
-            var cuenta = await _db.CuentasBancarias.FirstOrDefaultAsync(c => c.CuentaId == dto.CuentaId && c.UsuarioId == usuarioId, ct)
+
+        _db.Transacciones.Add(entity);
+        var cuentaNoRel = await _db.CuentasBancarias.FirstOrDefaultAsync(c => c.CuentaId == dto.CuentaId && c.UsuarioId == usuarioId, ct)
                         ?? throw new DomainException("Cuenta no encontrada o no pertenece al usuario.");
-            if (dto.Tipo == "Gasto") cuenta.SaldoActual -= dto.Monto;
-            else if (dto.Tipo == "Ingreso") cuenta.SaldoActual += dto.Monto;
-            await _db.SaveChangesAsync(ct);
-            return entity.TransaccionId;
-        }
+        if (dto.Tipo == "Gasto") cuentaNoRel.SaldoActual -= dto.Monto;
+        else cuentaNoRel.SaldoActual += dto.Monto;
+        await _db.SaveChangesAsync(ct);
+        return entity.TransaccionId;
     }
 
-    public async Task<TransaccionDto?> ObtenerAsync(int usuarioId, int id, CancellationToken ct)
+    public async Task<TransaccionDto?> ObtenerAsync(int usuarioId, int id, bool allowAdminAll, CancellationToken ct)
     {
-        return await _db.Transacciones
-            .AsNoTracking()
-            .Where(t => t.UsuarioId == usuarioId && t.TransaccionId == id)
+        var query = _db.Transacciones.AsNoTracking().Where(t => t.TransaccionId == id);
+        if (!allowAdminAll)
+        {
+            query = query.Where(t => t.UsuarioId == usuarioId);
+        }
+
+        return await query
             .Select(t => new TransaccionDto
             {
                 TransaccionId = t.TransaccionId,
@@ -95,9 +93,13 @@ public sealed class TransaccionesService : ITransaccionesService
             .FirstOrDefaultAsync(ct);
     }
 
-    public async Task<IReadOnlyList<TransaccionDto>> ListarAsync(int usuarioId, DateTime? from, DateTime? to, int page, int size, CancellationToken ct)
+    public async Task<IReadOnlyList<TransaccionDto>> ListarAsync(int usuarioId, bool allowAdminAll, DateTime? from, DateTime? to, int page, int size, CancellationToken ct)
     {
-        var q = _db.Transacciones.AsNoTracking().Where(t => t.UsuarioId == usuarioId);
+        var q = _db.Transacciones.AsNoTracking();
+        if (!allowAdminAll)
+        {
+            q = q.Where(t => t.UsuarioId == usuarioId);
+        }
 
         if (from.HasValue) q = q.Where(t => t.Fecha >= from.Value);
         if (to.HasValue) q = q.Where(t => t.Fecha <= to.Value);
@@ -124,7 +126,7 @@ public sealed class TransaccionesService : ITransaccionesService
     {
         var entity = await _db.Transacciones
             .FirstOrDefaultAsync(t => t.UsuarioId == usuarioId && t.TransaccionId == id, ct)
-            ?? throw new NotFoundException($"Transacción {id} no encontrada");
+            ?? throw new NotFoundException($"Transaccion {id} no encontrada");
 
         if (dto.Tipo != "Gasto" && dto.Tipo != "Ingreso")
             throw new DomainException("Tipo debe ser 'Gasto' o 'Ingreso'.");
@@ -132,27 +134,23 @@ public sealed class TransaccionesService : ITransaccionesService
         if (dto.CategoriaId.HasValue)
         {
             var catId = dto.CategoriaId.Value;
-            // Igual que en Crear: validar que la categoria exista y pertenezca al usuario
             var existe = dto.Tipo == "Gasto"
                 ? await _db.CategoriasGasto.AnyAsync(c => c.CategoriaGastoId == catId && c.UsuarioId == usuarioId, ct)
                 : await _db.CategoriasIngreso.AnyAsync(c => c.CategoriaIngresoId == catId && c.UsuarioId == usuarioId, ct);
-            if (!existe) throw new DomainException($"La categoría de {dto.Tipo.ToLower()} no existe o no pertenece al usuario.");
+            if (!existe) throw new DomainException($"La categoria de {dto.Tipo.ToLower()} no existe o no pertenece al usuario.");
         }
 
-        // Ajustar saldo: revertir impacto previo y aplicar nuevo impacto
         if (_db.Database.IsRelational())
         {
             await using var tx = await _db.Database.BeginTransactionAsync(ct);
             try
             {
-                // Revertir efecto anterior
                 var cuentaPrev = await _db.CuentasBancarias.FirstOrDefaultAsync(c => c.CuentaId == entity.CuentaId && c.UsuarioId == usuarioId, ct)
                                 ?? throw new DomainException("Cuenta anterior no encontrada o no pertenece al usuario.");
 
                 if (entity.Tipo == "Gasto") cuentaPrev.SaldoActual += entity.Monto;
-                else if (entity.Tipo == "Ingreso") cuentaPrev.SaldoActual -= entity.Monto;
+                else cuentaPrev.SaldoActual -= entity.Monto;
 
-                // Aplicar nuevos valores
                 entity.Monto = dto.Monto;
                 entity.Tipo = dto.Tipo;
                 entity.Fecha = dto.Fecha;
@@ -170,12 +168,11 @@ public sealed class TransaccionesService : ITransaccionesService
                     entity.CategoriaGastoId = null;
                 }
 
-                // Ajustar saldo de la (posible) cuenta nueva
                 var cuentaNueva = await _db.CuentasBancarias.FirstOrDefaultAsync(c => c.CuentaId == dto.CuentaId && c.UsuarioId == usuarioId, ct)
                                 ?? throw new DomainException("Cuenta nueva no encontrada o no pertenece al usuario.");
 
                 if (dto.Tipo == "Gasto") cuentaNueva.SaldoActual -= dto.Monto;
-                else if (dto.Tipo == "Ingreso") cuentaNueva.SaldoActual += dto.Monto;
+                else cuentaNueva.SaldoActual += dto.Monto;
 
                 await _db.SaveChangesAsync(ct);
                 await tx.CommitAsync(ct);
@@ -188,14 +185,12 @@ public sealed class TransaccionesService : ITransaccionesService
         }
         else
         {
-            // Revertir efecto anterior
             var cuentaPrev = await _db.CuentasBancarias.FirstOrDefaultAsync(c => c.CuentaId == entity.CuentaId && c.UsuarioId == usuarioId, ct)
                             ?? throw new DomainException("Cuenta anterior no encontrada o no pertenece al usuario.");
 
             if (entity.Tipo == "Gasto") cuentaPrev.SaldoActual += entity.Monto;
-            else if (entity.Tipo == "Ingreso") cuentaPrev.SaldoActual -= entity.Monto;
+            else cuentaPrev.SaldoActual -= entity.Monto;
 
-            // Aplicar nuevos valores
             entity.Monto = dto.Monto;
             entity.Tipo = dto.Tipo;
             entity.Fecha = dto.Fecha;
@@ -217,7 +212,7 @@ public sealed class TransaccionesService : ITransaccionesService
                             ?? throw new DomainException("Cuenta nueva no encontrada o no pertenece al usuario.");
 
             if (dto.Tipo == "Gasto") cuentaNueva.SaldoActual -= dto.Monto;
-            else if (dto.Tipo == "Ingreso") cuentaNueva.SaldoActual += dto.Monto;
+            else cuentaNueva.SaldoActual += dto.Monto;
 
             await _db.SaveChangesAsync(ct);
         }
@@ -227,7 +222,7 @@ public sealed class TransaccionesService : ITransaccionesService
     {
         var entity = await _db.Transacciones
             .FirstOrDefaultAsync(t => t.UsuarioId == usuarioId && t.TransaccionId == id, ct)
-            ?? throw new NotFoundException($"Transacción {id} no encontrada");
+            ?? throw new NotFoundException($"Transaccion {id} no encontrada");
 
         if (_db.Database.IsRelational())
         {
@@ -237,9 +232,8 @@ public sealed class TransaccionesService : ITransaccionesService
                 var cuenta = await _db.CuentasBancarias.FirstOrDefaultAsync(c => c.CuentaId == entity.CuentaId && c.UsuarioId == usuarioId, ct)
                             ?? throw new DomainException("Cuenta no encontrada o no pertenece al usuario.");
 
-                // Revertir efecto
                 if (entity.Tipo == "Gasto") cuenta.SaldoActual += entity.Monto;
-                else if (entity.Tipo == "Ingreso") cuenta.SaldoActual -= entity.Monto;
+                else cuenta.SaldoActual -= entity.Monto;
 
                 _db.Transacciones.Remove(entity);
                 await _db.SaveChangesAsync(ct);
@@ -256,27 +250,33 @@ public sealed class TransaccionesService : ITransaccionesService
             var cuenta = await _db.CuentasBancarias.FirstOrDefaultAsync(c => c.CuentaId == entity.CuentaId && c.UsuarioId == usuarioId, ct)
                         ?? throw new DomainException("Cuenta no encontrada o no pertenece al usuario.");
 
-            // Revertir efecto
             if (entity.Tipo == "Gasto") cuenta.SaldoActual += entity.Monto;
-            else if (entity.Tipo == "Ingreso") cuenta.SaldoActual -= entity.Monto;
+            else cuenta.SaldoActual -= entity.Monto;
 
             _db.Transacciones.Remove(entity);
             await _db.SaveChangesAsync(ct);
         }
     }
 
-    public async Task RecalcularSaldosAsync(CancellationToken ct)
+    public async Task RecalcularSaldosAsync(int usuarioId, bool allowAdminAll, CancellationToken ct)
     {
-        // Calcular saldos para todas las cuentas basándose en SaldoInicial + ingresos - gastos
+        var cuentasQuery = _db.CuentasBancarias.AsQueryable();
+        var transQuery = _db.Transacciones.AsQueryable();
+
+        if (!allowAdminAll)
+        {
+            cuentasQuery = cuentasQuery.Where(c => c.UsuarioId == usuarioId);
+            transQuery = transQuery.Where(t => t.UsuarioId == usuarioId);
+        }
+
         if (_db.Database.IsRelational())
         {
             await using var tx = await _db.Database.BeginTransactionAsync(ct);
             try
             {
-                var cuentas = await _db.CuentasBancarias.ToListAsync(ct);
+                var cuentas = await cuentasQuery.ToListAsync(ct);
 
-                // Agrupar sumas por cuenta y tipo
-                var agregados = await _db.Transacciones
+                var agregados = await transQuery
                     .GroupBy(t => new { t.CuentaId, t.Tipo })
                     .Select(g => new { g.Key.CuentaId, g.Key.Tipo, Total = g.Sum(x => x.Monto) })
                     .ToListAsync(ct);
@@ -312,9 +312,9 @@ public sealed class TransaccionesService : ITransaccionesService
         }
         else
         {
-            var cuentas = await _db.CuentasBancarias.ToListAsync(ct);
+            var cuentas = await cuentasQuery.ToListAsync(ct);
 
-            var agregados = await _db.Transacciones
+            var agregados = await transQuery
                 .GroupBy(t => new { t.CuentaId, t.Tipo })
                 .Select(g => new { g.Key.CuentaId, g.Key.Tipo, Total = g.Sum(x => x.Monto) })
                 .ToListAsync(ct);

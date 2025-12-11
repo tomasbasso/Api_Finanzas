@@ -1,12 +1,12 @@
-﻿namespace Api_Finanzas.ModelsDTO
+namespace Api_Finanzas.ModelsDTO
 {
     public class VerPresupuestoDto
     {
         public int PresupuestoId { get; set; }
         public int CategoriaGastoId { get; set; }
-    public string NombreCategoria { get; set; } = string.Empty;
+        public string NombreCategoria { get; set; } = string.Empty;
         public decimal MontoLimite { get; set; }
         public int Mes { get; set; }
-        public int Año { get; set; }
+        public int Anio { get; set; }
     }
 }

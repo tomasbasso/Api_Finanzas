@@ -1,9 +1,10 @@
-﻿using Api_Finanzas.Models;
+using Api_Finanzas.Models;
 using Api_Finanzas.ModelsDTO;
 using Api_Finanzas.Properties;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.EntityFrameworkCore;
+using System.Security.Claims;
 
 namespace Api_Finanzas.Controllers
 {
@@ -20,60 +21,59 @@ namespace Api_Finanzas.Controllers
         }
 
         [HttpGet]
-        public async Task<IActionResult> GetAll()
+        public async Task<IActionResult> GetAll([FromQuery] bool includeAllForAdmin = false, CancellationToken ct = default)
         {
+            var userId = GetUsuarioId();
+            var allowAdminAll = includeAllForAdmin && EsAdmin();
+
             var categorias = await _context.CategoriasIngreso
+                .AsNoTracking()
+                .Where(c => allowAdminAll || c.UsuarioId == userId)
                 .Select(c => new CategoriaIngresoDto
                 {
                     CategoriaIngresoId = c.CategoriaIngresoId,
                     Nombre = c.Nombre,
                     UsuarioId = c.UsuarioId
                 })
-                .ToListAsync();
+                .ToListAsync(ct);
 
             return Ok(categorias);
         }
 
         [HttpGet("{id}")]
-        public async Task<IActionResult> Get(int id)
+        public async Task<IActionResult> Get(int id, [FromQuery] bool includeAllForAdmin = false, CancellationToken ct = default)
         {
-            var userIdClaim = User.FindFirst(System.Security.Claims.ClaimTypes.NameIdentifier)?.Value;
-            if (userIdClaim == null)
-                return Unauthorized();
-            var userId = int.Parse(userIdClaim);
-            var categoria = await _context.CategoriasIngreso
-                .Where(c => c.CategoriaIngresoId == id)
-                .Select(c => new CategoriaIngresoDto
-                {
-                    CategoriaIngresoId = c.CategoriaIngresoId,
-                    Nombre = c.Nombre,
-                    UsuarioId = c.UsuarioId
-                })
-                .FirstOrDefaultAsync();
+            var userId = GetUsuarioId();
+            var allowAdminAll = includeAllForAdmin && EsAdmin();
+            var categoria = await _context.CategoriasIngreso.AsNoTracking().FirstOrDefaultAsync(c => c.CategoriaIngresoId == id, ct);
 
             if (categoria == null)
                 return NotFound();
 
-            return Ok(categoria);
+            if (!allowAdminAll && categoria.UsuarioId != userId)
+                return Forbid();
+
+            return Ok(new CategoriaIngresoDto
+            {
+                CategoriaIngresoId = categoria.CategoriaIngresoId,
+                Nombre = categoria.Nombre,
+                UsuarioId = categoria.UsuarioId
+            });
         }
 
         [HttpPost]
-        public async Task<IActionResult> Create(CategoriaIngresoCreateDto dto)
+        public async Task<IActionResult> Create(CategoriaIngresoCreateDto dto, CancellationToken ct)
         {
-            
-            var userIdClaim = User.FindFirst(System.Security.Claims.ClaimTypes.NameIdentifier)?.Value;
-            if (userIdClaim == null)
-                return Unauthorized();
-            var userId = int.Parse(userIdClaim);
+            var userId = GetUsuarioId();
 
             var nueva = new CategoriaIngreso
             {
                 Nombre = dto.Nombre,
-                UsuarioId = userId    
+                UsuarioId = userId
             };
 
             _context.CategoriasIngreso.Add(nueva);
-            await _context.SaveChangesAsync();
+            await _context.SaveChangesAsync(ct);
 
             return CreatedAtAction(nameof(Get), new { id = nueva.CategoriaIngresoId }, new CategoriaIngresoDto
             {
@@ -84,36 +84,48 @@ namespace Api_Finanzas.Controllers
         }
 
         [HttpPut("{id}")]
-        public async Task<IActionResult> Update(int id, CategoriaIngresoCreateDto dto)
+        public async Task<IActionResult> Update(int id, CategoriaIngresoCreateDto dto, CancellationToken ct)
         {
-        
-            var userIdClaim = User.FindFirst(System.Security.Claims.ClaimTypes.NameIdentifier)?.Value;
-            if (userIdClaim == null)
-                return Unauthorized();
-            var userId = int.Parse(userIdClaim);
+            var userId = GetUsuarioId();
 
-            var categoria = await _context.CategoriasIngreso.FindAsync(id);
+            var categoria = await _context.CategoriasIngreso.FirstOrDefaultAsync(c => c.CategoriaIngresoId == id, ct);
             if (categoria == null)
                 return NotFound();
 
-            categoria.Nombre = dto.Nombre;
-            categoria.UsuarioId = userId;
+            if (categoria.UsuarioId != userId)
+                return Forbid();
 
-            await _context.SaveChangesAsync();
+            categoria.Nombre = dto.Nombre;
+
+            await _context.SaveChangesAsync(ct);
             return NoContent();
         }
 
         [HttpDelete("{id}")]
-        public async Task<IActionResult> Delete(int id)
+        public async Task<IActionResult> Delete(int id, CancellationToken ct)
         {
-            var categoria = await _context.CategoriasIngreso.FindAsync(id);
+            var userId = GetUsuarioId();
+            var categoria = await _context.CategoriasIngreso.FirstOrDefaultAsync(c => c.CategoriaIngresoId == id, ct);
             if (categoria == null)
                 return NotFound();
 
+            if (categoria.UsuarioId != userId)
+                return Forbid();
+
             _context.CategoriasIngreso.Remove(categoria);
-            await _context.SaveChangesAsync();
+            await _context.SaveChangesAsync(ct);
 
             return NoContent();
         }
+
+        private int GetUsuarioId()
+        {
+            var userIdClaim = User.FindFirst(ClaimTypes.NameIdentifier)?.Value ?? throw new UnauthorizedAccessException();
+            if (!int.TryParse(userIdClaim, out var userId)) throw new UnauthorizedAccessException();
+            return userId;
+        }
+
+        private bool EsAdmin() =>
+            string.Equals(User.FindFirstValue(ClaimTypes.Role), "Administrador", StringComparison.OrdinalIgnoreCase);
     }
 }
