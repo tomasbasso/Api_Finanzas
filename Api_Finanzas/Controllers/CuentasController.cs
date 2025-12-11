@@ -23,14 +23,18 @@ namespace Api_Finanzas.Controllers
         }
 
         [HttpGet]
-        public async Task<IActionResult> GetCuentas()
+        public async Task<IActionResult> GetCuentas(CancellationToken ct)
         {
             var userIdClaim = User.FindFirst(System.Security.Claims.ClaimTypes.NameIdentifier)?.Value;
             if (userIdClaim == null)
                 return Unauthorized();
             var userId = int.Parse(userIdClaim);
 
+            // Recalcula saldos antes de listar para asegurar valores actualizados.
+            await _transService.RecalcularSaldosAsync(ct);
+
             var cuentas = await _context.CuentasBancarias
+                .Where(c => c.UsuarioId == userId)
                 .Select(c => new CuentaBancariaDto
                 {
                     CuentaId = c.CuentaId,
@@ -38,7 +42,9 @@ namespace Api_Finanzas.Controllers
                     Banco = c.Banco,
                     TipoCuenta = c.TipoCuenta,
                     SaldoInicial = c.SaldoInicial,
-                    UsuarioId = userId
+                    SaldoActual = c.SaldoActual,
+                    Saldo = c.SaldoActual,
+                    UsuarioId = c.UsuarioId
                 })
                 .ToListAsync();
 
@@ -52,7 +58,7 @@ namespace Api_Finanzas.Controllers
             if (userIdClaim == null)
                 return Unauthorized();
             var userId = int.Parse(userIdClaim);
-            var cuenta = await _context.CuentasBancarias.FindAsync(id);
+            var cuenta = await _context.CuentasBancarias.FirstOrDefaultAsync(c => c.CuentaId == id && c.UsuarioId == userId);
             if (cuenta == null) return NotFound();
 
             return Ok(new CuentaBancariaDto
@@ -62,20 +68,28 @@ namespace Api_Finanzas.Controllers
                 Banco = cuenta.Banco,
                 TipoCuenta= cuenta.TipoCuenta,
                 SaldoInicial = cuenta.SaldoInicial,
-                UsuarioId = userId
+                SaldoActual = cuenta.SaldoActual,
+                Saldo = cuenta.SaldoActual,
+                UsuarioId = cuenta.UsuarioId
             });
         }
 
         [HttpPost]
         public async Task<IActionResult> CrearCuenta(CrearCuentaDto dto)
         {
+            var userIdClaim = User.FindFirst(System.Security.Claims.ClaimTypes.NameIdentifier)?.Value;
+            if (userIdClaim == null)
+                return Unauthorized();
+            var userId = int.Parse(userIdClaim);
+
             var cuenta = new CuentaBancaria
             {
                 Nombre = dto.Nombre,
                 Banco = dto.Banco,
                 SaldoInicial = dto.SaldoInicial,
+                SaldoActual = dto.SaldoInicial,
                 TipoCuenta= dto.TipoCuenta,
-                UsuarioId = dto.UsuarioId
+                UsuarioId = userId
             };
 
             _context.CuentasBancarias.Add(cuenta);
@@ -87,14 +101,19 @@ namespace Api_Finanzas.Controllers
         [HttpPut("{id}")]
         public async Task<IActionResult> EditarCuenta(int id, CrearCuentaDto dto)
         {
-            var cuenta = await _context.CuentasBancarias.FindAsync(id);
+            var userIdClaim = User.FindFirst(System.Security.Claims.ClaimTypes.NameIdentifier)?.Value;
+            if (userIdClaim == null)
+                return Unauthorized();
+            var userId = int.Parse(userIdClaim);
+
+            var cuenta = await _context.CuentasBancarias.FirstOrDefaultAsync(c => c.CuentaId == id && c.UsuarioId == userId);
             if (cuenta == null) return NotFound();
 
             cuenta.Nombre = dto.Nombre;
             cuenta.Banco = dto.Banco;
             cuenta.TipoCuenta = dto.TipoCuenta;
             cuenta.SaldoInicial = dto.SaldoInicial;
-            cuenta.UsuarioId = dto.UsuarioId;
+            cuenta.UsuarioId = userId;
 
             await _context.SaveChangesAsync();
             return NoContent();
@@ -103,7 +122,12 @@ namespace Api_Finanzas.Controllers
         [HttpDelete("{id}")]
         public async Task<IActionResult> EliminarCuenta(int id)
         {
-            var cuenta = await _context.CuentasBancarias.FindAsync(id);
+            var userIdClaim = User.FindFirst(System.Security.Claims.ClaimTypes.NameIdentifier)?.Value;
+            if (userIdClaim == null)
+                return Unauthorized();
+            var userId = int.Parse(userIdClaim);
+
+            var cuenta = await _context.CuentasBancarias.FirstOrDefaultAsync(c => c.CuentaId == id && c.UsuarioId == userId);
             if (cuenta == null) return NotFound();
 
             _context.CuentasBancarias.Remove(cuenta);

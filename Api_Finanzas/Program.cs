@@ -101,16 +101,27 @@ builder.Services.AddCors(o =>
 });
 
 var app = builder.Build();
+
+// =================== MIDDLEWARE ===================
 app.UseExceptionHandler();
+
+// Swagger SIEMPRE
 app.UseSwagger();
 app.UseSwaggerUI(c =>
 {
+    // Swagger en /swagger
     c.SwaggerEndpoint("/swagger/v1/swagger.json", "Api Finanzas v1");
+    // NO pongas RoutePrefix = string.Empty
 });
-app.UseHttpsRedirection();
+
+// IMPORTANTE: en MonsterASP Free SIN HTTPS
+// app.UseHttpsRedirection();
+
 app.UseCors("app");
 app.UseAuthentication();
 app.UseAuthorization();
+
 app.MapGet("/", () => "API Finanzas funcionando");
 app.MapControllers();
+
 app.Run();
